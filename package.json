@@ -1,6 +1,7 @@
 {
-  "name": "viral-clipper",
-  "version": "1.0.0",
+  "name": "viralcut-v2",
+  "version": "2.0.0",
+  "description": "VIRALCUT v2.0 - AI YouTube TikTok Viral Clip Automation App with Timeline Studio, B-Roll AI & CapCut Export",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",

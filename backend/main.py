@@ -1,22 +1,39 @@
 """
-FastAPI Backend for ViralCut
+FastAPI Backend for VIRALCUT v2.0
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import uuid
 import json
+
 try:
-    from .viral_detector import find_viral_moments, calculate_viral_score
+    from .viral_detector import (
+        find_viral_moments, 
+        calculate_viral_score, 
+        export_to_capcut_draft, 
+        export_to_srt, 
+        generate_broll_suggestions
+    )
     from .clipper import download_video, transcribe_video, create_clip
 except ImportError:
-    from viral_detector import find_viral_moments, calculate_viral_score
+    from viral_detector import (
+        find_viral_moments, 
+        calculate_viral_score, 
+        export_to_capcut_draft, 
+        export_to_srt, 
+        generate_broll_suggestions
+    )
     from clipper import download_video, transcribe_video, create_clip
 
-app = FastAPI(title="ViralCut API", version="1.0.0")
+app = FastAPI(
+    title="VIRALCUT API v2.0",
+    version="2.0.0",
+    description="VIRALCUT v2.0 - AI YouTube TikTok Viral Automation Engine"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,221 +51,128 @@ class AnalyzeRequest(BaseModel):
     aspectRatio: str = "9:16"
     faceTracking: bool = True
     autoSubtitles: bool = True
+    language: str = "th"
 
-class ClipResponse(BaseModel):
-    id: str
-    start: float
-    end: float
-    duration: float
-    viralScore: int
-    hook: str
-    transcript: str
-    title: str
-    hashtags: List[str]
-    thumbnail: str
-    views_prediction: str
-    hook_type: str = "general"
-    emotion: str = "neutral"
-    reasons: List[str] = []
+class CapcutExportRequest(BaseModel):
+    clip: Dict
 
-# In-memory storage for demo
+class SrtExportRequest(BaseModel):
+    subtitles: List[Dict]
+    startOffset: float = 0.0
+
+# Projects in-memory storage
 projects = {}
 
 @app.get("/")
 def root():
-    return {"message": "ViralCut API is running", "version": "1.0.0", "features": ["download", "transcribe", "viral_detection", "auto_clip"]}
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "ffmpeg": check_ffmpeg(), "yt_dlp": check_ytdlp()}
-
-def check_ffmpeg():
-    import subprocess
-    try:
-        r = subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=2)
-        return r.returncode == 0
-    except:
-        return False
-
-def check_ytdlp():
-    import subprocess
-    try:
-        r = subprocess.run(["yt-dlp", "--version"], capture_output=True, timeout=2)
-        return r.returncode == 0
-    except:
-        return False
+    return {
+        "name": "VIRALCUT Engine",
+        "version": "2.0.0",
+        "status": "online",
+        "features": [
+            "smart_downloader_v2",
+            "whisper_transcribe",
+            "viral_hook_detection_v2",
+            "retention_curve_prediction",
+            "broll_ai_generator",
+            "capcut_draft_exporter",
+            "srt_vtt_exporter",
+            "auto_916_crop_safezone",
+            "animated_subtitles_engine"
+        ]
+    }
 
 @app.post("/analyze")
-async def analyze_video(req: AnalyzeRequest):
+def analyze(req: AnalyzeRequest):
     """
-    Main pipeline: Download -> Transcribe -> Viral Detection
+    วิเคราะห์และค้นหา Viral Moments ด้วย AI v2.0
     """
     try:
-        print(f"Analyzing: {req.url}")
-        
-        # 1. Download (mock if not available)
-        download_result = download_video(req.url, output_dir="/tmp")
-        print(f"Download result: {download_result}")
+        # Download
+        dl_res = download_video(req.url)
+        video_path = dl_res.get("file_path")
+        total_duration = dl_res.get("duration", 1847)
+        title = dl_res.get("title", "Video")
 
-        # 2. Transcribe
-        if download_result.get("file_path") and os.path.exists(download_result["file_path"]):
-            segments = transcribe_video(download_result["file_path"])
-        else:
-            # Mock transcript
-            segments = transcribe_video(None)
-        
-        total_duration = download_result.get("duration", 1800)
-        if isinstance(total_duration, str):
-            total_duration = 1800
+        # Transcribe
+        segments = transcribe_video(video_path or "mock.mp4", language=req.language)
 
-        # 3. Find viral moments
-        clip_duration = int(req.clipDuration) if req.clipDuration.isdigit() else 30
-        viral_clips = find_viral_moments(segments, total_duration, num_clips=req.clipCount, clip_duration=clip_duration)
+        # Viral Detection
+        duration_int = int(req.clipDuration) if str(req.clipDuration).isdigit() else 30
+        clips = find_viral_moments(
+            segments, 
+            total_duration, 
+            num_clips=req.clipCount, 
+            clip_duration=duration_int
+        )
 
-        # 4. Format response
-        clips = []
-        thumbnails = [
-            "https://images.unsplash.com/photo-1611162616805-6396b235a6a6?w=400",
-            "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400",
-            "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400",
-            "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
-            "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400",
-            "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400",
-        ]
-
-        for i, vc in enumerate(viral_clips):
-            clips.append({
-                "id": str(uuid.uuid4())[:8],
-                "start": vc["start"],
-                "end": vc["end"],
-                "duration": vc["duration"],
-                "viralScore": int(vc["score"]),
-                "hook": vc["hook"][:60],
-                "transcript": vc["text"][:200],
-                "title": vc["title"],
-                "hashtags": vc["hashtags"],
-                "thumbnail": thumbnails[i % len(thumbnails)],
-                "views_prediction": vc["views_prediction"],
-                "hook_type": vc["hook_type"],
-                "emotion": vc["emotion"],
-                "reasons": vc["reasons"]
-            })
-
-        # Sort by viral score
-        clips.sort(key=lambda x: x["viralScore"], reverse=True)
-
-        project_id = str(uuid.uuid4())[:8]
+        project_id = str(uuid.uuid4())
         projects[project_id] = {
-            "url": req.url,
-            "title": download_result.get("title", "Unknown"),
+            "title": title,
             "duration": total_duration,
+            "video_path": video_path,
             "segments": segments,
             "clips": clips,
-            "file_path": download_result.get("file_path")
+            "settings": req.dict()
         }
+
+        # Format clips for frontend
+        formatted_clips = []
+        for i, c in enumerate(clips):
+            formatted_clips.append({
+                "id": str(i + 1),
+                "start": c["start"],
+                "end": c["end"],
+                "duration": c["duration"],
+                "viralScore": c["score"],
+                "hook": c["hook"],
+                "transcript": c["text"],
+                "title": c["title"],
+                "hashtags": c["hashtags"],
+                "thumbnail": f"https://images.unsplash.com/photo-{1611162616805 + i * 1000}-6396b235a6a6?w=400",
+                "views_prediction": c["views_prediction"],
+                "hook_type": c.get("hook_type", "curiosity_gap"),
+                "emotion": c.get("emotion", "excited"),
+                "reasons": c.get("reasons", []),
+                "hook_strength": c.get("hook_strength", 90),
+                "retention_probability": c.get("retention_probability", 88),
+                "shareability": c.get("shareability", 85),
+                "retention_curve": c.get("retention_curve", []),
+                "brolls": c.get("brolls", [])
+            })
 
         return {
             "project_id": project_id,
-            "title": download_result.get("title", "Video"),
+            "title": title,
             "duration": total_duration,
-            "clips": clips,
-            "transcript": segments[:10],  # preview
-            "mock": download_result.get("mock", False)
+            "clips": formatted_clips,
+            "transcript": segments,
+            "mock": dl_res.get("mock", False)
         }
-
     except Exception as e:
         print(f"Analyze error: {e}")
-        import traceback
-        traceback.print_exc()
-        # Return mock data as fallback so frontend still works
-        mock_clips = [
-            {
-                "id": "1",
-                "start": 42,
-                "end": 67,
-                "duration": 25,
-                "viralScore": 96,
-                "hook": "ความลับที่ไม่มีใครบอกคุณ...",
-                "transcript": "ความลับที่ไม่มีใครบอกคุณเกี่ยวกับการทำเงินออนไลน์ คือทุกคนโฟกัสผิดจุด คุณไม่ต้องมีสินค้า ไม่ต้องมีทุน แค่ต้องเข้าใจสิ่งนี้",
-                "title": "ความลับทำเงินออนไลน์ที่ไม่มีใครบอก 🤫",
-                "hashtags": ["#หาเงินออนไลน์", "#ธุรกิจ", "#เคล็ดลับ"],
-                "thumbnail": "https://images.unsplash.com/photo-1611162616805-6396b235a6a6?w=400",
-                "views_prediction": "500K-1M",
-                "hook_type": "curiosity_gap",
-                "emotion": "excited",
-                "reasons": ["เจอ Hook แบบ curiosity_gap", "มีคำไวรัล 3 คำ"]
-            },
-            {
-                "id": "2",
-                "start": 128,
-                "end": 158,
-                "duration": 30,
-                "viralScore": 92,
-                "hook": "หยุดทำแบบนี้เดี๋ยวนี้!",
-                "transcript": "ถ้าคุณยังทำ 3 สิ่งนี้อยู่ คุณจะไม่มีวันรวย หยุดเดี๋ยวนี้เลย อันดับแรกคือการตื่นสาย อันดับสองคือ...",
-                "title": "หยุดทำ 3 สิ่งนี้ถ้าอยากรวย 💸",
-                "hashtags": ["#พัฒนาตัวเอง", "#ความสำเร็จ", "#mindset"],
-                "thumbnail": "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400",
-                "views_prediction": "300K-600K",
-                "hook_type": "contrarian",
-                "emotion": "excited",
-                "reasons": ["เจอ Hook แบบ contrarian"]
-            }
-        ]
-        return {
-            "project_id": "mock",
-            "title": "Mock Video (Fallback)",
-            "duration": 1847,
-            "clips": mock_clips,
-            "transcript": [],
-            "mock": True,
-            "error": str(e)
-        }
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate-clips")
-async def generate_clips(project_id: str, aspect_ratio: str = "9:16", style: str = "mrbeast"):
+@app.post("/export/capcut")
+def export_capcut(req: CapcutExportRequest):
     """
-    สร้างไฟล์คลิปจริงจาก project
+    ส่งออกคลิปเป็น CapCut Draft JSON
     """
-    if project_id not in projects:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    project = projects[project_id]
-    input_file = project.get("file_path")
-    
-    if not input_file or not os.path.exists(input_file):
-        return {"message": "No source file, mock generation", "clips": project["clips"], "mock": True}
+    draft = export_to_capcut_draft(req.clip)
+    return draft
 
-    output_dir = f"/tmp/viralcut_{project_id}"
-    os.makedirs(output_dir, exist_ok=True)
-
-    generated = []
-    for clip in project["clips"]:
-        output_path = os.path.join(output_dir, f"clip_{clip['id']}_{clip['viralScore']}.mp4")
-        success = create_clip(
-            input_file=input_file,
-            output_file=output_path,
-            start=clip["start"],
-            end=clip["end"],
-            aspect_ratio=aspect_ratio,
-            style=style,
-            subtitles=project.get("segments", []),
-            face_tracking=True
-        )
-        generated.append({
-            "id": clip["id"],
-            "file": output_path if success else None,
-            "success": success
-        })
-
-    return {"project_id": project_id, "generated": generated, "output_dir": output_dir}
-
-@app.get("/projects/{project_id}")
-def get_project(project_id: str):
-    if project_id not in projects:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return projects[project_id]
+@app.post("/export/srt")
+def export_srt_file(req: SrtExportRequest):
+    """
+    ส่งออก Subtitles เป็นไฟล์ .srt
+    """
+    srt_text = export_to_srt(req.subtitles, req.startOffset)
+    return Response(
+        content=srt_text,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=subtitles.srt"}
+    )
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0",端口=8000)
