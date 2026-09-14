@@ -78,8 +78,8 @@ def transcribe_video(file_path: str, language: str = "th") -> List[Dict]:
     """
     try:
         from faster_whisper import WhisperModel
-        model = WhisperModel("base", device="cpu", compute_type="int8")
-        segments, info = model.transcribe(file_path, language=language, beam_size=5)
+        model = WhisperModel("tiny", device="cpu", compute_type="int8")
+        segments, info = model.transcribe(file_path, beam_size=1)
         
         result = []
         for segment in segments:

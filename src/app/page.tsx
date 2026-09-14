@@ -11,15 +11,15 @@ import {
   Volume2, VolumeX, Target, Brain, Layers,
   ChevronRight, ArrowUpRight, Share2, Shield,
   Film, Music, Sliders, BarChart3, Calendar,
-  Radio, RefreshCw, FileText
+  Radio, RefreshCw, FileText, CheckCircle2
 } from "lucide-react"
 import { cn, formatTime } from "@/lib/utils"
 import AutomationPanel from "@/components/AutomationPanel"
 
-type Platform = "youtube" | "tiktok" | "upload" | null
-type ProcessingStep = "idle" | "downloading" | "transcribing" | "analyzing" | "clipping" | "done"
-type ClipStyle = "mrbeast" | "hormozi" | "cyberpunk" | "podcast" | "minimal"
-type AspectRatio = "9:16" | "1:1" | "4:5" | "16:9"
+type Platform = "youtube" | "tiktok" | "upload"
+type ProcessingStep = "idle" | "uploading" | "downloading" | "transcribing" | "analyzing" | "clipping" | "done"
+type ClipStyle = "hormozi" | "mrbeast" | "cyberpunk" | "podcast"
+type AspectRatio = "9:16" | "1:1" | "16:9"
 type StudioTab = "editor" | "analytics" | "broll" | "scheduler"
 
 interface BrollItem {
@@ -55,170 +55,21 @@ interface ViralClip {
   shareability?: number
   retention_curve?: RetentionPoint[]
   brolls?: BrollItem[]
+  video_url?: string
 }
-
-const mockClips: ViralClip[] = [
-  {
-    id: "1",
-    start: 42,
-    end: 67,
-    duration: 25,
-    viralScore: 98,
-    hook: "ความลับที่ไม่มีใครบอกคุณเกี่ยวกับการทำเงินออนไลน์...",
-    transcript: "ความลับที่ไม่มีใครบอกคุณเกี่ยวกับการทำเงินออนไลน์ คือทุกคนโฟกัสผิดจุด คุณไม่ต้องมีสินค้า ไม่ต้องมีทุน แค่ต้องเข้าใจสิ่งนี้สิ่งเดียวเท่านั้น",
-    title: "ความลับทำเงินออนไลน์ที่ไม่มีใครบอก 🤫",
-    hashtags: ["#หาเงินออนไลน์", "#ธุรกิจ", "#เคล็ดลับ", "#TikTokUni", "#mindset"],
-    thumbnail: "https://images.unsplash.com/photo-1611162616805-6396b235a6a6?w=400",
-    views_prediction: "800K - 2.5M",
-    hook_type: "curiosity_gap",
-    emotion: "excited",
-    reasons: ["เจอ Hook ทรงพลัง (curiosity_gap)", "มีคีย์เวิร์ดยอดฮิต 4 คำ", "ความยาวสมบูรณ์แบบสำหรับ TikTok & Reels (25s)", "อารมณ์ตื่นเต้นพีคสูง"],
-    hook_strength: 96,
-    retention_probability: 94,
-    shareability: 92,
-    retention_curve: [
-      { time: 0, retention: 100 },
-      { time: 3, retention: 94 },
-      { time: 7, retention: 90 },
-      { time: 12, retention: 87 },
-      { time: 18, retention: 85 },
-      { time: 22, retention: 89 },
-      { time: 25, retention: 81 }
-    ],
-    brolls: [
-      {
-        timestamp: "0:02 - 0:05",
-        type: "video",
-        prompt: "4k macro shot of money counting machine with neon lighting",
-        sfx: "cash_register.mp3",
-        suggestion: "ฟุตเทจนับเงินสด + เสียง Cash Register"
-      },
-      {
-        timestamp: "0:12 - 0:15",
-        type: "overlay",
-        prompt: "highlight text badge with glowing border",
-        sfx: "ding_success.mp3",
-        suggestion: "แอนิเมชันกรอบไฟนีออนเน้นคีย์เวิร์ด + เสียง Ding"
-      }
-    ]
-  },
-  {
-    id: "2",
-    start: 128,
-    end: 158,
-    duration: 30,
-    viralScore: 94,
-    hook: "หยุดทำ 3 สิ่งนี้เดี๋ยวนี้ถ้าอยากรวย!",
-    transcript: "ถ้าคุณยังทำ 3 สิ่งนี้อยู่ คุณจะไม่มีวันรวย หยุดเดี๋ยวนี้เลย อันดับแรกคือการตื่นสาย อันดับสองคือการใช้เงินไปกับของที่ไม่สร้างรายได้ อันดับสามคือการไม่ลงทุนในตัวเอง",
-    title: "หยุดทำ 3 สิ่งนี้ถ้าอยากรวย 💸",
-    hashtags: ["#พัฒนาตัวเอง", "#ความสำเร็จ", "#mindset", "#การเงิน", "#ชีวิตเปลี่ยน"],
-    thumbnail: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400",
-    views_prediction: "500K - 1.2M",
-    hook_type: "contrarian",
-    emotion: "alert",
-    reasons: ["เจอ Hook แบบ contrarian (หยุด/เลิก)", "มีตัวเลขเฉพาะเจาะจง (3 สิ่ง)", "กระตุ้น Loss Aversion"],
-    hook_strength: 92,
-    retention_probability: 90,
-    shareability: 88,
-    retention_curve: [
-      { time: 0, retention: 100 },
-      { time: 4, retention: 92 },
-      { time: 10, retention: 87 },
-      { time: 18, retention: 85 },
-      { time: 25, retention: 86 },
-      { time: 30, retention: 76 }
-    ],
-    brolls: [
-      {
-        timestamp: "0:00 - 0:03",
-        type: "overlay",
-        prompt: "red neon warning sign glitching on black screen",
-        sfx: "whoosh_impact.mp3",
-        suggestion: "ป้ายเตือนสีแดงกะพริบ + เสียงเบสบูม Whoosh"
-      }
-    ]
-  },
-  {
-    id: "3",
-    start: 245,
-    end: 270,
-    duration: 25,
-    viralScore: 90,
-    hook: "ผมลองวิธีนี้มา 30 วัน จาก 0 ผู้ติดตาม สู่ 100K...",
-    transcript: "ผมลองวิธีนี้มา 30 วัน จาก 0 ผู้ติดตาม ตอนนี้มี 100K แล้ว วิธีคือการโพสต์วันละ 3 ครั้งในเวลาที่คนดูเยอะที่สุดคือ 7 โมงเช้า เที่ยง และ 2 ทุ่ม",
-    title: "0 ถึง 100K ใน 30 วัน ทำยังไง? 🚀",
-    hashtags: ["#tiktok", "#สร้างตัวตน", "#ไวรัล", "#ยอดวิว", "#เทคนิค"],
-    thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400",
-    views_prediction: "300K - 700K",
-    hook_type: "story",
-    emotion: "excited",
-    reasons: ["มีตัวเลขการเติบโตชัดเจน (0 -> 100K)", "ระบุเวลาและขั้นตอนทำตามได้ทันที"],
-    hook_strength: 88,
-    retention_probability: 87,
-    shareability: 89,
-    retention_curve: [
-      { time: 0, retention: 100 },
-      { time: 3, retention: 90 },
-      { time: 8, retention: 85 },
-      { time: 15, retention: 83 },
-      { time: 20, retention: 85 },
-      { time: 25, retention: 74 }
-    ],
-    brolls: [
-      {
-        timestamp: "0:00 - 0:03",
-        type: "video",
-        prompt: "dramatic zoom in on speaker with dynamic bokeh lights",
-        sfx: "pop_hook.mp3",
-        suggestion: "Dynamic Zoom-in 1.2x + เสียง Pop เพื่อดึงสายตา"
-      }
-    ]
-  },
-  {
-    id: "4",
-    start: 312,
-    end: 335,
-    duration: 23,
-    viralScore: 88,
-    hook: "AI จะมาแทนที่คุณใน 6 เดือน ถ้าคุณยังทำงานแบบเดิม...",
-    transcript: "ถ้าคุณทำงานแบบนี้ AI จะมาแทนที่คุณแน่นอนใน 6 เดือนข้างหน้า ผมไม่ได้ขู่ แต่มันคือความจริงที่ต้องเตรียมตัวตั้งแต่วันนี้",
-    title: "งานแบบไหน AI จะแทนที่ใน 6 เดือน? 😱",
-    hashtags: ["#AI", "#อนาคต", "#เทคโนโลยี", "#ChatGPT", "#งาน"],
-    thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400",
-    views_prediction: "400K - 900K",
-    hook_type: "shocking",
-    emotion: "excited",
-    reasons: ["เจอ Hook แบบ shocking", "คีย์เวิร์ด AI กำลังเป็นกระแสไวรัล"],
-    hook_strength: 89,
-    retention_probability: 86,
-    shareability: 85,
-    retention_curve: [
-      { time: 0, retention: 100 },
-      { time: 3, retention: 91 },
-      { time: 7, retention: 86 },
-      { time: 14, retention: 82 },
-      { time: 19, retention: 84 },
-      { time: 23, retention: 75 }
-    ],
-    brolls: [
-      {
-        timestamp: "0:04 - 0:08",
-        type: "video",
-        prompt: "futuristic AI neural network glowing interface, cinematic",
-        sfx: "digital_glitch.mp3",
-        suggestion: "กราฟิกโครงข่าย AI นิวรอน + เสียง Sci-fi Glitch"
-      }
-    ]
-  }
-]
 
 export default function Home() {
   const [url, setUrl] = useState("")
   const [platform, setPlatform] = useState<Platform>("youtube")
   const [step, setStep] = useState<ProcessingStep>("idle")
-  const [progress, setProgress] = useState(0)
-  const [clips, setClips] = useState<ViralClip[]>(mockClips)
-  const [selectedClip, setSelectedClip] = useState<ViralClip>(mockClips[0])
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [projectId, setProjectId] = useState<string>("default_project")
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null)
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null)
+  
+  const [clips, setClips] = useState<ViralClip[]>([])
+  const [selectedClip, setSelectedClip] = useState<ViralClip | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<StudioTab>("editor")
   
@@ -231,73 +82,163 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [subPosition, setSubPosition] = useState<"bottom" | "center" | "top">("bottom")
-  const [fontSize, setFontSize] = useState<number>(24)
   const [audioNormalize, setAudioNormalize] = useState(true)
+  
+  // Real Render State
+  const [isRendering, setIsRendering] = useState(false)
+  const [renderedClipUrl, setRenderedClipUrl] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState<string | null>(null)
-  const [audioMuted, setAudioMuted] = useState(false)
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // Simulation timer for video preview
-  useEffect(() => {
-    let interval: any
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          if (prev >= (selectedClip?.duration || 25)) {
-            return 0
-          }
-          return +(prev + 0.1).toFixed(1)
-        })
-      }, 100)
+  // Sync video time
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const vTime = videoRef.current.currentTime
+      const clipStart = selectedClip ? selectedClip.start : 0
+      const clipDuration = selectedClip ? selectedClip.duration : 30
+      
+      if (vTime > clipStart + clipDuration) {
+        videoRef.current.currentTime = clipStart
+      }
+      setCurrentTime(Math.max(0, +(vTime - clipStart).toFixed(1)))
     }
-    return () => clearInterval(interval)
-  }, [isPlaying, selectedClip])
+  }
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        if (selectedClip && (videoRef.current.currentTime < selectedClip.start || videoRef.current.currentTime > selectedClip.end)) {
+          videoRef.current.currentTime = selectedClip.start
+        }
+        videoRef.current.play()
+        setIsPlaying(true)
+      }
+    } else {
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadedFile(file)
+    setPlatform("upload")
+    setErrorMessage(null)
+
+    // Send real upload to backend
+    setStep("uploading")
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      })
+      if (!res.ok) {
+        throw new Error("Upload failed")
+      }
+      const data = await res.json()
+      setUploadedFilePath(data.file_path)
+      setUploadedVideoUrl(data.video_url)
+      setStep("idle")
+    } catch (err: any) {
+      console.error(err)
+      setErrorMessage("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")
+      setStep("idle")
+    }
+  }
 
   const handleStartProcess = async () => {
-    if (!url && platform !== "upload") {
-      setUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-    }
-
+    setErrorMessage(null)
+    setRenderedClipUrl(null)
     setStep("downloading")
-    setProgress(15)
 
-    setTimeout(() => {
-      setStep("transcribing")
-      setProgress(40)
-    }, 1200)
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: platform !== "upload" ? (url || "https://www.youtube.com/watch?v=sample") : undefined,
+          file_path: platform === "upload" ? uploadedFilePath : undefined,
+          clipCount,
+          clipDuration,
+          style: clipStyle,
+          aspectRatio,
+          faceTracking: true,
+          autoSubtitles: true,
+          language: "th"
+        }),
+      })
 
-    setTimeout(() => {
-      setStep("analyzing")
-      setProgress(75)
-    }, 2400)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || "การประมวลผลล้มเหลว")
+      }
 
-    setTimeout(async () => {
-      try {
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            clipCount,
-            clipDuration,
-            style: clipStyle,
-            aspectRatio,
-            faceTracking: true,
-            autoSubtitles: true,
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.clips && data.clips.length > 0) {
-            setClips(data.clips)
-            setSelectedClip(data.clips[0])
-          }
+      const data = await res.json()
+      setProjectId(data.project_id || "proj_" + Date.now())
+      if (data.clips && data.clips.length > 0) {
+        setClips(data.clips)
+        setSelectedClip(data.clips[0])
+        if (data.clips[0].video_url) {
+          setUploadedVideoUrl(data.clips[0].video_url)
         }
-      } catch (e) {
-        console.error(e)
       }
       setStep("done")
-      setProgress(100)
-    }, 3600)
+    } catch (err: any) {
+      console.error(err)
+      setErrorMessage(err.message || "เกิดข้อผิดพลาดในการวิเคราะห์วิดีโอ")
+      setStep("idle")
+    }
+  }
+
+  const handleRenderRealClip = async (clip: ViralClip) => {
+    setIsRendering(true)
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: projectId,
+          clip_id: clip.id,
+          start: clip.start,
+          end: clip.end,
+          aspect_ratio: aspectRatio,
+          style: clipStyle,
+          face_tracking: true,
+          audio_normalize: audioNormalize,
+        })
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || "FFmpeg Render Failed")
+      }
+
+      const data = await res.json()
+      setRenderedClipUrl(data.clip_url)
+
+      // Auto trigger browser download
+      const a = document.createElement("a")
+      a.href = data.clip_url
+      a.download = data.filename || `VIRALCUT_Clip_${clip.id}.mp4`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (err: any) {
+      console.error(err)
+      setErrorMessage("เกิดข้อผิดพลาดขณะเรนเดอร์ FFmpeg: " + err.message)
+    } finally {
+      setIsRendering(false)
+    }
   }
 
   const copyToClipboard = (text: string, id: string) => {
@@ -316,9 +257,9 @@ export default function Home() {
       })
       const data = await res.json()
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
+      const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")
-      a.href = url
+      a.href = blobUrl
       a.download = `VIRALCUT_${clip.id}_CapCut_Draft.json`
       a.click()
     } catch (e) {
@@ -337,10 +278,10 @@ export default function Home() {
         body: JSON.stringify({ type: "srt", clip })
       })
       const text = await res.text()
-      const blob = new Blob([text], { type: "text/plain" })
-      const url = URL.createObjectURL(blob)
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" })
+      const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")
-      a.href = url
+      a.href = blobUrl
       a.download = `VIRALCUT_${clip.id}_Subtitles.srt`
       a.click()
     } catch (e) {
@@ -407,20 +348,10 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>AI Engine Ready</span>
+              <span>FFmpeg + Whisper Ready</span>
             </div>
-            <button 
-              onClick={() => {
-                const sample = "https://www.youtube.com/watch?v=sample123"
-                setUrl(sample)
-              }}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 transition flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#ffbe0b]" />
-              Demo Clip
-            </button>
           </div>
         </div>
       </header>
@@ -428,11 +359,11 @@ export default function Home() {
       {/* Main Container */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         
-        {/* Top Hero Input Section */}
+        {/* Top Input Section */}
         <section className="mb-10 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-white/80 mb-4 backdrop-blur-md">
             <Flame className="w-4 h-4 text-[#ff006e]" />
-            <span>เปลี่ยนวิดีโอยาว 1 ชั่วโมง เป็น 4-8 คลิปสั้นไวรัลใน 30 วินาที</span>
+            <span>ระบบตัดต่อคลิปจริงด้วย FFmpeg + Faster-Whisper ถอดเสียงแม่นยำ</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight mb-4">
             ตัดต่อคลิปไวรัลอัตโนมัติด้วย{" "}
@@ -440,25 +371,66 @@ export default function Home() {
               VIRALCUT v2.0
             </span>
           </h1>
-          <p className="text-sm sm:text-base text-white/60 mb-8 max-w-xl mx-auto">
-            Whisper ถอดเสียงไทย 99% • AI คัดเฉพาะช่วง Hook • Subtitle สไตล์ MrBeast/Hormozi • สเกล 9:16 Auto Face Tracking
-          </p>
+
+          {/* Platform Tabs */}
+          <div className="flex justify-center gap-2 mb-4">
+            <button
+              onClick={() => setPlatform("youtube")}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-2",
+                platform === "youtube" ? "bg-red-500/20 border-red-500 text-white" : "bg-white/[0.03] border-white/10 text-white/60"
+              )}
+            >
+              <Youtube className="w-4 h-4 text-red-500" />
+              YouTube / TikTok URL
+            </button>
+            <button
+              onClick={() => {
+                setPlatform("upload")
+                fileInputRef.current?.click()
+              }}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-2",
+                platform === "upload" ? "bg-[#3a86ff]/20 border-[#3a86ff] text-white" : "bg-white/[0.03] border-white/10 text-white/60"
+              )}
+            >
+              <Upload className="w-4 h-4 text-[#3a86ff]" />
+              {uploadedFile ? uploadedFile.name : "อัปโหลดไฟล์ MP4 / MOV จากเครื่อง"}
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept="video/mp4,video/quicktime,video/webm" 
+              className="hidden" 
+            />
+          </div>
 
           {/* Input Box */}
           <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-2 sm:p-3 backdrop-blur-2xl shadow-2xl shadow-black/50">
             <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 relative flex items-center">
-                <div className="absolute left-3.5 text-white/40">
-                  {platform === "youtube" ? <Youtube className="w-5 h-5 text-red-500" /> : <Music2 className="w-5 h-5 text-[#00f2fe]" />}
+              {platform === "upload" ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 h-12 bg-black/40 border border-dashed border-white/20 hover:border-[#3a86ff] rounded-xl flex items-center justify-center gap-2 text-xs text-white/70 cursor-pointer transition px-4"
+                >
+                  <FileVideo className="w-4 h-4 text-[#3a86ff]" />
+                  <span>{uploadedFile ? `เลือกไฟล์: ${uploadedFile.name} (${(uploadedFile.size / (1024*1024)).toFixed(1)} MB)` : "คลิกเพื่อเลือกไฟล์วิดีโอจากคอมพิวเตอร์ของคุณ"}</span>
                 </div>
-                <input
-                  type="text"
-                  placeholder="วางลิงก์ YouTube, TikTok หรือ Podcast ที่นี่..."
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="w-full h-12 pl-11 pr-4 bg-black/40 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[#ff006e] text-white placeholder-white/30 transition"
-                />
-              </div>
+              ) : (
+                <div className="flex-1 relative flex items-center">
+                  <div className="absolute left-3.5 text-white/40">
+                    <Youtube className="w-5 h-5 text-red-500" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="วางลิงก์ YouTube, TikTok หรือ Podcast ที่นี่..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="w-full h-12 pl-11 pr-4 bg-black/40 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[#ff006e] text-white placeholder-white/30 transition"
+                  />
+                </div>
+              )}
 
               <button
                 onClick={handleStartProcess}
@@ -468,12 +440,12 @@ export default function Home() {
                 {step !== "idle" && step !== "done" ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>กำลังประมวลผล...</span>
+                    <span>กำลังวิเคราะห์...</span>
                   </>
                 ) : (
                   <>
                     <Wand2 className="w-4 h-4" />
-                    <span>สร้างคลิปไวรัลทันที</span>
+                    <span>ประมวลผลวิดีโอ</span>
                   </>
                 )}
               </button>
@@ -492,7 +464,6 @@ export default function Home() {
                     <option value={2}>2 คลิป</option>
                     <option value={4}>4 คลิป</option>
                     <option value={6}>6 คลิป</option>
-                    <option value={8}>8 คลิป</option>
                   </select>
                 </div>
 
@@ -510,14 +481,14 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-white/40">ซับไตเติล:</span>
+                  <span className="text-white/40">สไตล์ซับไตเติล:</span>
                   <select 
                     value={clipStyle} 
                     onChange={(e) => setClipStyle(e.target.value as ClipStyle)}
                     className="bg-black/60 border border-white/10 rounded-lg px-2 py-1 text-white text-xs"
                   >
                     <option value="hormozi">Hormozi (เด้งเขียวเหลือง)</option>
-                    <option value="mrbeast">MrBeast (ขอบหนา)</option>
+                    <option value="mrbeast">MrBeast (ขอบดำหนา)</option>
                     <option value="cyberpunk">Cyberpunk Neon</option>
                     <option value="podcast">Podcast Minimal</option>
                   </select>
@@ -532,37 +503,37 @@ export default function Home() {
                     onChange={(e) => setAudioNormalize(e.target.checked)}
                     className="rounded accent-[#ff006e]" 
                   />
-                  <span>AI Audio Boost</span>
+                  <span>FFmpeg Loudnorm Audio</span>
                 </label>
               </div>
             </div>
           </div>
 
-          {/* Progress bar when processing */}
+          {/* Error notice */}
+          {errorMessage && (
+            <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2 text-left">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Processing Steps indicator */}
           <AnimatePresence>
             {step !== "idle" && step !== "done" && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-6 p-4 rounded-xl bg-white/[0.04] border border-white/10 backdrop-blur-md text-left"
+                className="mt-6 p-4 rounded-xl bg-white/[0.04] border border-white/10 backdrop-blur-md text-left flex items-center justify-between"
               >
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#ff006e]" />
-                    {step === "downloading" && "1/4 กำลังดึงข้อมูลวิดีโอระดับความชัด 1080p..."}
-                    {step === "transcribing" && "2/4 Whisper AI กำลังถอดเสียงภาษาไทยและจับเวลาคำต่อคำ..."}
-                    {step === "analyzing" && "3/4 AI วิเคราะห์หาช่วง Hook, Emotional Peak และ Viral Score..."}
-                    {step === "clipping" && "4/4 ตัดต่อ Smart 9:16 พร้อมฝังซับไตเติลสไตล์ Hormozi..."}
+                <div className="flex items-center gap-3 text-xs font-semibold">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#ff006e]" />
+                  <span>
+                    {step === "uploading" && "กำลังอัปโหลดไฟล์วิดีโอเข้าสู่ระบบ..."}
+                    {step === "downloading" && "yt-dlp กำลังดาวน์โหลดวิดีโอความละเอียดสูงสุด..."}
+                    {step === "transcribing" && "Faster-Whisper กำลังถอดเสียงภาษาไทยและจับเวลาคำ..."}
+                    {step === "analyzing" && "AI กำลังคำนวณ Viral Score และหาช่วง Hook..."}
                   </span>
-                  <span className="text-[#ffbe0b]">{progress}%</span>
-                </div>
-                <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-[#ff006e] via-[#8338ec] to-[#3a86ff]"
-                    style={{ width: `${progress}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
                 </div>
               </motion.div>
             )}
@@ -577,108 +548,107 @@ export default function Home() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Flame className="w-4 h-4 text-[#ff006e]" />
-                <h2 className="font-bold text-sm">คลิปไวรัลที่ AI คัดเลือก ({clips.length})</h2>
+                <h2 className="font-bold text-sm">คลิปไวรัลที่ประมวลผล ({clips.length})</h2>
               </div>
               <span className="text-xs text-white/40">เรียงตาม Viral Score</span>
             </div>
 
-            <div className="space-y-3">
-              {clips.map((clip) => {
-                const isSelected = selectedClip?.id === clip.id
-                return (
-                  <motion.div
-                    key={clip.id}
-                    onClick={() => {
-                      setSelectedClip(clip)
-                      setCurrentTime(0)
-                      setIsPlaying(false)
-                    }}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className={cn(
-                      "p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden backdrop-blur-md",
-                      isSelected
-                        ? "bg-gradient-to-r from-white/[0.08] to-white/[0.03] border-[#ff006e]/80 shadow-lg shadow-[#ff006e]/10"
-                        : "bg-white/[0.02] border-white/[0.06] hover:border-white/20"
-                    )}
-                  >
-                    {isSelected && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff006e] to-[#ffbe0b]" />
-                    )}
-
-                    <div className="flex gap-3">
-                      {/* Thumbnail with Score badge */}
-                      <div className="relative w-24 h-28 rounded-xl overflow-hidden bg-black/60 flex-shrink-0 border border-white/10 group">
-                        <img 
-                          src={clip.thumbnail} 
-                          alt={clip.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm border border-white/10 text-[10px] font-black text-[#ffbe0b] flex items-center gap-1">
-                          <Flame className="w-2.5 h-2.5 text-[#ff006e]" />
-                          {clip.viralScore}
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 right-1.5 text-[9px] text-white/80 font-mono bg-black/60 px-1 py-0.5 rounded text-center">
-                          {formatTime(clip.start)} - {formatTime(clip.end)}
-                        </div>
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#ff006e]/20 text-[#ff006e] border border-[#ff006e]/30">
-                              {clip.hook_type || "viral hook"}
-                            </span>
-                            <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              {clip.views_prediction}
-                            </span>
-                          </div>
-
-                          <h3 className="text-sm font-bold line-clamp-1 text-white group-hover:text-[#ffbe0b] transition">
-                            {clip.title}
-                          </h3>
-
-                          <p className="text-xs text-white/60 line-clamp-2 mt-1 leading-relaxed">
-                            &ldquo;{clip.hook}&rdquo;
-                          </p>
-                        </div>
-
-                        {/* Badges / Reasons */}
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/[0.04] text-[10px] text-white/50">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {clip.duration}s
-                          </span>
-                          <span>•</span>
-                          <span className="text-white/80 font-medium">
-                            {clip.reasons?.[0] || "Hook แรง"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            {/* Batch automation shortcut */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#ff006e]/10 via-[#8338ec]/10 to-[#3a86ff]/10 border border-white/10 backdrop-blur-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#ffbe0b]" />
-                  <span className="text-xs font-bold">Auto Batch Export</span>
-                </div>
-                <button 
-                  onClick={() => alert("ระบบกำลัง Render ทุกคลิปเป็นไฟล์ MP4 1080x1920 ในพื้นหลัง")}
-                  className="px-3 py-1 rounded-full bg-white text-black text-xs font-black hover:bg-white/90 transition"
+            {clips.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center text-xs text-white/40 space-y-3">
+                <Scissors className="w-8 h-8 mx-auto text-white/20" />
+                <p>ยังไม่มีคลิปที่ประมวลผล กรุณากด "ประมวลผลวิดีโอ" ด้านบน</p>
+                <button
+                  onClick={() => {
+                    setUrl("demo")
+                    handleStartProcess()
+                  }}
+                  className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold transition text-xs"
                 >
-                  Export All ({clips.length})
+                  ลองประมวลผล Demo Video
                 </button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                {clips.map((clip) => {
+                  const isSelected = selectedClip?.id === clip.id
+                  return (
+                    <motion.div
+                      key={clip.id}
+                      onClick={() => {
+                        setSelectedClip(clip)
+                        setRenderedClipUrl(null)
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = clip.start
+                        }
+                      }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden backdrop-blur-md",
+                        isSelected
+                          ? "bg-gradient-to-r from-white/[0.08] to-white/[0.03] border-[#ff006e]/80 shadow-lg shadow-[#ff006e]/10"
+                          : "bg-white/[0.02] border-white/[0.06] hover:border-white/20"
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#ff006e] to-[#ffbe0b]" />
+                      )}
+
+                      <div className="flex gap-3">
+                        <div className="relative w-24 h-28 rounded-xl overflow-hidden bg-black/60 flex-shrink-0 border border-white/10 group">
+                          <img 
+                            src={clip.thumbnail} 
+                            alt={clip.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm border border-white/10 text-[10px] font-black text-[#ffbe0b] flex items-center gap-1">
+                            <Flame className="w-2.5 h-2.5 text-[#ff006e]" />
+                            {clip.viralScore}
+                          </div>
+                          <div className="absolute bottom-1.5 left-1.5 right-1.5 text-[9px] text-white/80 font-mono bg-black/60 px-1 py-0.5 rounded text-center">
+                            {formatTime(clip.start)} - {formatTime(clip.end)}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#ff006e]/20 text-[#ff006e] border border-[#ff006e]/30">
+                                {clip.hook_type || "viral hook"}
+                              </span>
+                              <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                {clip.views_prediction}
+                              </span>
+                            </div>
+
+                            <h3 className="text-sm font-bold line-clamp-1 text-white">
+                              {clip.title}
+                            </h3>
+
+                            <p className="text-xs text-white/60 line-clamp-2 mt-1 leading-relaxed">
+                              &ldquo;{clip.hook}&rdquo;
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/[0.04] text-[10px] text-white/50">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {clip.duration}s
+                            </span>
+                            <span>•</span>
+                            <span className="text-white/80 font-medium">
+                              {clip.reasons?.[0] || "Hook แรง"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Studio Timeline & Inspector */}
@@ -732,75 +702,84 @@ export default function Home() {
             </div>
 
             {/* TAB CONTENT: 1. EDITOR */}
-            {activeTab === "editor" && (
+            {activeTab === "editor" && selectedClip && (
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-5 backdrop-blur-xl space-y-5">
                 
                 {/* Visual Canvas Player Area */}
                 <div className="flex flex-col sm:flex-row gap-5 items-center justify-center">
                   
-                  {/* Smartphone 9:16 Frame */}
+                  {/* Smartphone Frame (Real Video Preview) */}
                   <div className="relative w-[240px] h-[426px] bg-black rounded-[36px] border-4 border-white/20 shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center group">
-                    {/* Background image mockup */}
-                    <img 
-                      src={selectedClip.thumbnail} 
-                      alt="Preview"
-                      className="absolute inset-0 w-full h-full object-cover opacity-85"
-                    />
-                    <div className="absolute inset-0 bg-black/20" />
+                    {/* Real HTML5 Video element */}
+                    {uploadedVideoUrl || renderedClipUrl ? (
+                      <video
+                        ref={videoRef}
+                        src={renderedClipUrl || uploadedVideoUrl || ""}
+                        onTimeUpdate={handleTimeUpdate}
+                        playsInline
+                        loop
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img 
+                        src={selectedClip.thumbnail} 
+                        alt="Preview"
+                        className="absolute inset-0 w-full h-full object-cover opacity-85"
+                      />
+                    )}
 
                     {/* Safe Zone Overlay */}
                     {showSafeZone && (
                       <div className="absolute inset-0 pointer-events-none z-20 border border-dashed border-red-500/40 rounded-[32px] m-1">
-                        {/* Right sidebar icons simulation */}
                         <div className="absolute right-2 bottom-20 flex flex-col items-center gap-3 text-white/80">
                           <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-[10px]">❤️</div>
                           <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-[10px]">💬</div>
                           <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-[10px]">↗️</div>
                         </div>
-                        {/* Bottom caption simulation */}
                         <div className="absolute bottom-4 left-3 right-12 text-[9px] text-white/90">
-                          <p className="font-bold truncate">@viralcut_official</p>
+                          <p className="font-bold truncate">@viralcut_creator</p>
                           <p className="text-white/60 truncate">{selectedClip.title}</p>
                         </div>
-                        {/* Safe zone label */}
                         <div className="absolute top-3 left-3 px-1.5 py-0.5 rounded bg-red-500/80 text-[8px] font-bold text-white uppercase tracking-wider">
                           TikTok Safe Zone
                         </div>
                       </div>
                     )}
 
-                    {/* Subtitle Animated Overlay */}
-                    <div className={cn(
-                      "absolute left-3 right-3 text-center z-10 pointer-events-none transition-all",
-                      subPosition === "bottom" ? "bottom-28" : subPosition === "center" ? "top-1/2 -translate-y-1/2" : "top-16"
-                    )}>
-                      {clipStyle === "hormozi" && (
-                        <div className="inline-block bg-black/70 px-3 py-1.5 rounded-xl border border-white/20 shadow-xl backdrop-blur-sm">
-                          <p className="text-sm font-black uppercase text-yellow-300 drop-shadow-[0_2px_8px_rgba(0,0,0,1)] tracking-wide">
-                            {currentTime < 4 ? "🔥 " + selectedClip.hook.slice(0, 20) : "⚡ " + selectedClip.transcript.slice(0, 28) + "..."}
-                          </p>
-                        </div>
-                      )}
-                      {clipStyle === "mrbeast" && (
-                        <div className="text-sm font-black uppercase text-[#ffe600] drop-shadow-[0_4px_0_#000] tracking-wider transform -rotate-1">
-                          {selectedClip.hook.slice(0, 25)}!
-                        </div>
-                      )}
-                      {clipStyle === "cyberpunk" && (
-                        <div className="text-xs font-mono font-black text-cyan-300 drop-shadow-[0_0_8px_#00f2fe] bg-black/80 px-2 py-1 rounded border border-cyan-400">
-                          &gt; {selectedClip.hook.slice(0, 25)}
-                        </div>
-                      )}
-                      {clipStyle === "podcast" && (
-                        <div className="text-xs font-medium text-white/95 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-md">
-                          {selectedClip.transcript.slice(0, 35)}...
-                        </div>
-                      )}
-                    </div>
+                    {/* Subtitle Animated Overlay (If not burned yet) */}
+                    {!renderedClipUrl && (
+                      <div className={cn(
+                        "absolute left-3 right-3 text-center z-10 pointer-events-none transition-all",
+                        subPosition === "bottom" ? "bottom-28" : subPosition === "center" ? "top-1/2 -translate-y-1/2" : "top-16"
+                      )}>
+                        {clipStyle === "hormozi" && (
+                          <div className="inline-block bg-black/70 px-3 py-1.5 rounded-xl border border-white/20 shadow-xl backdrop-blur-sm">
+                            <p className="text-sm font-black uppercase text-yellow-300 drop-shadow-[0_2px_8px_rgba(0,0,0,1)] tracking-wide">
+                              {currentTime < 3 ? "🔥 " + selectedClip.hook.slice(0, 20) : "⚡ " + selectedClip.transcript.slice(0, 28) + "..."}
+                            </p>
+                          </div>
+                        )}
+                        {clipStyle === "mrbeast" && (
+                          <div className="text-sm font-black uppercase text-[#ffe600] drop-shadow-[0_4px_0_#000] tracking-wider transform -rotate-1">
+                            {selectedClip.hook.slice(0, 25)}!
+                          </div>
+                        )}
+                        {clipStyle === "cyberpunk" && (
+                          <div className="text-xs font-mono font-black text-cyan-300 drop-shadow-[0_0_8px_#00f2fe] bg-black/80 px-2 py-1 rounded border border-cyan-400">
+                            &gt; {selectedClip.hook.slice(0, 25)}
+                          </div>
+                        )}
+                        {clipStyle === "podcast" && (
+                          <div className="text-xs font-medium text-white/95 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-md">
+                            {selectedClip.transcript.slice(0, 35)}...
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Play/Pause Button on Hover */}
                     <button 
-                      onClick={() => setIsPlaying(!isPlaying)}
+                      onClick={togglePlay}
                       className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition z-30"
                     >
                       <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-2xl">
@@ -831,20 +810,25 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Scrubber track */}
                       <input 
                         type="range"
                         min="0"
                         max={selectedClip.duration}
                         step="0.1"
                         value={currentTime}
-                        onChange={(e) => setCurrentTime(parseFloat(e.target.value))}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value)
+                          setCurrentTime(val)
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = selectedClip.start + val
+                          }
+                        }}
                         className="w-full accent-[#ff006e] h-1.5 bg-white/10 rounded-lg cursor-pointer"
                       />
 
                       <div className="flex items-center justify-between pt-1">
                         <button
-                          onClick={() => setIsPlaying(!isPlaying)}
+                          onClick={togglePlay}
                           className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-black text-xs font-bold"
                         >
                           {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -878,7 +862,7 @@ export default function Home() {
                     <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-2">
                       <span className="text-xs font-bold text-white/80 flex items-center gap-1.5">
                         <Subtitles className="w-3.5 h-3.5 text-[#ffbe0b]" />
-                        สไตล์ Subtitle แอนิเมชัน
+                        สไตล์ Subtitle แอนิเมชัน (FFmpeg Burn)
                       </span>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         {[
@@ -889,7 +873,10 @@ export default function Home() {
                         ].map((s) => (
                           <button
                             key={s.id}
-                            onClick={() => setClipStyle(s.id as ClipStyle)}
+                            onClick={() => {
+                              setClipStyle(s.id as ClipStyle)
+                              setRenderedClipUrl(null)
+                            }}
                             className={cn(
                               "p-2 rounded-xl text-left border transition",
                               clipStyle === s.id
@@ -925,13 +912,40 @@ export default function Home() {
                       </button>
                     </div>
 
+                    {/* Real FFmpeg Render Button */}
                     <button
-                      onClick={() => alert(`กำลังดาวน์โหลดคลิป MP4 ความชัด 1080x1920 (9:16) สำหรับ Clip #${selectedClip.id}`)}
-                      className="w-full h-11 rounded-2xl bg-gradient-to-r from-[#ff006e] to-[#ffbe0b] font-black text-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#ff006e]/20 hover:opacity-90 transition"
+                      onClick={() => handleRenderRealClip(selectedClip)}
+                      disabled={isRendering}
+                      className="w-full h-12 rounded-2xl bg-gradient-to-r from-[#ff006e] to-[#ffbe0b] font-black text-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#ff006e]/20 hover:opacity-90 transition disabled:opacity-50"
                     >
-                      <Download className="w-4 h-4" />
-                      <span>Download Clip #{selectedClip.id} (MP4 1080p)</span>
+                      {isRendering ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>FFmpeg กำลังตัดต่อและเบิร์นซับ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" />
+                          <span>เรนเดอร์และดาวน์โหลดคลิป MP4 จริง (1080x1920)</span>
+                        </>
+                      )}
                     </button>
+
+                    {renderedClipUrl && (
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          เรนเดอร์ MP4 สำเร็จเรียบร้อย!
+                        </span>
+                        <a 
+                          href={renderedClipUrl} 
+                          download 
+                          className="underline font-bold text-white hover:text-emerald-300"
+                        >
+                          คลิกดาวน์โหลดอีกครั้ง
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -940,7 +954,7 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white/80 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-[#ff006e]" />
-                      AI Title & Social Caption ที่พร้อมโพสต์
+                      AI Title & Social Caption
                     </span>
                     <button
                       onClick={() => copyToClipboard(`${selectedClip.title}\n\n${selectedClip.transcript}\n\n${selectedClip.hashtags.join(" ")}`, "full-caption")}
@@ -967,7 +981,7 @@ export default function Home() {
             )}
 
             {/* TAB CONTENT: 2. RETENTION ANALYTICS */}
-            {activeTab === "analytics" && (
+            {activeTab === "analytics" && selectedClip && (
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 backdrop-blur-xl space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -983,7 +997,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 3 Metric Cards */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10">
                     <div className="text-[11px] text-white/50 mb-1">Hook Strength</div>
@@ -1002,7 +1015,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* SVG Retention Curve Graph */}
                 <div className="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3">
                   <div className="flex justify-between text-xs text-white/60">
                     <span>100% (เริ่มต้นคลิป)</span>
@@ -1038,26 +1050,11 @@ export default function Home() {
                     <span>0:{selectedClip.duration}</span>
                   </div>
                 </div>
-
-                {/* AI Recommendations */}
-                <div className="space-y-2 text-xs">
-                  <div className="font-bold text-white/80">คำแนะนำจาก AI เพิ่มยอดวิว (+25%):</div>
-                  <div className="space-y-1.5">
-                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-2 text-white/70">
-                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      <span>ใส่ Sound Effect "Whoosh" ในวินาทีที่ 0:02 ช่วยดึงความสนใจเพิ่มขึ้น 14%</span>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-2 text-white/70">
-                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      <span>ใช้คำถามกระตุ้นความอยากรู้ในแคปชันเพื่อเพิ่มอัตราการคอมเมนต์ใน TikTok</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* TAB CONTENT: 3. B-ROLL & SOUND FX */}
-            {activeTab === "broll" && (
+            {/* TAB CONTENT: 3. B-ROLL */}
+            {activeTab === "broll" && selectedClip && (
               <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 backdrop-blur-xl space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1088,12 +1085,6 @@ export default function Home() {
                         <span className="text-emerald-400 flex items-center gap-1 font-mono text-[11px]">
                           🔊 SFX: {broll.sfx}
                         </span>
-                        <button 
-                          onClick={() => alert(`จำลองการแทรก B-Roll: "${broll.suggestion}" ลงใน Timeline เรียบร้อย`)}
-                          className="px-3 py-1 rounded-full bg-white text-black text-xs font-bold hover:bg-white/90"
-                        >
-                          Auto Insert
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -1101,7 +1092,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* TAB CONTENT: 4. SCHEDULER & AUTOMATION */}
+            {/* TAB CONTENT: 4. SCHEDULER */}
             {activeTab === "scheduler" && (
               <AutomationPanel />
             )}

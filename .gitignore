@@ -15,3 +15,9 @@ venv
 *.mp4
 *.mov
 *.avi
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+backend/storage/clips/*
+!backend/storage/clips/.gitkeep
+backend/storage/thumbnails/*
+!backend/storage/thumbnails/.gitkeep
